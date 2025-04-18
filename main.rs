@@ -5,13 +5,15 @@ use serde_json::json;
 use tokio;
 
 #[derive(Deserialize)]
+#[derive(Debug)]
 struct FrontEntry {
-    member: Member,
+    content: Member,
 }
 
 #[derive(Deserialize)]
+#[derive(Debug)]
 struct Member {
-    name: String,
+    member: String,
 }
 
 #[tokio::main]
@@ -50,56 +52,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .send()
         .await?;
     println!("Received response (status: {})", fronts_response.status());
+    
     let fronts: Vec<FrontEntry> = fronts_response
         .error_for_status()?
         .json()
         .await?;
     println!("Parsed {} front entries.", fronts.len());
-    let front_names: Vec<String> = fronts.into_iter().map(|e| e.member.name).collect();
-    println!("Front names: {:?}", front_names);
 
-    // Format status as "F: <fronter1>, <fronter2>, ..."
-    let status_desc = if front_names.is_empty() {
-        println!("No fronts found.");
-        "F: none?".to_string()
-    } else {
-        let desc = format!("F: {}", front_names.join(", "));
-        println!("Formatted statusDescription: {}", desc);
-        desc
-    };
+    let front_names: Vec<String> = fronts.into_iter().map(|e| e.content.member).collect();
+    println!("Front IDs: {:?}", front_names);
 
-    // 2. Authenticate with VRChat
-    let auth_url = format!("{}/auth/user", vr_base);
-    println!("Authenticating with VRChat: {}", auth_url);
-    let auth_response = client
-        .get(&auth_url)
-        .basic_auth(&vr_username, Some(&vr_password))
-        .send()
-        .await?;
-    println!("Authenticated (status: {})", auth_response.status());
-    let auth_json: serde_json::Value = auth_response
-        .error_for_status()?
-        .json()
-        .await?;
-    let user_id = auth_json["id"].as_str().expect("Missing user ID");
-    println!("Retrieved user ID: {}", user_id);
+    // // Format status as "F: <fronter1>, <fronter2>, ..."
+    // let status_desc = if front_names.is_empty() {
+    //     println!("No fronts found.");
+    //     "F: none?".to_string()
+    // } else {
+    //     let desc = format!("F: {}", front_names.join(", "));
+    //     println!("Formatted statusDescription: {}", desc);
+    //     desc
+    // };
 
-    // 3. Update VRChat status
-    let update_url = format!("{}/users/{}", vr_base, user_id);
-    println!("Updating VRChat status at: {}", update_url);
-    let update_payload = json!({
-        "status": "active",
-        "statusDescription": status_desc,
-    });
-    println!("Payload: {}", update_payload);
-    let update_response = client
-        .put(&update_url)
-        .basic_auth(&vr_username, Some(&vr_password))
-        .json(&update_payload)
-        .send()
-        .await?;
-    println!("Update response status: {}", update_response.status());
+    // // 2. Authenticate with VRChat
+    // let auth_url = format!("{}/auth/user", vr_base);
+    // println!("Authenticating with VRChat: {}", auth_url);
+    // let auth_response = client
+    //     .get(&auth_url)
+    //     .basic_auth(&vr_username, Some(&vr_password))
+    //     .send()
+    //     .await?;
+    // println!("Authenticated (status: {})", auth_response.status());
+    // let auth_json: serde_json::Value = auth_response
+    //     .error_for_status()?
+    //     .json()
+    //     .await?;
+    // let user_id = auth_json["id"].as_str().expect("Missing user ID");
+    // println!("Retrieved user ID: {}", user_id);
 
-    println!("VRChat status updated successfully.");
+    // // 3. Update VRChat status
+    // let update_url = format!("{}/users/{}", vr_base, user_id);
+    // println!("Updating VRChat status at: {}", update_url);
+    // let update_payload = json!({
+    //     "status": "active",
+    //     "statusDescription": status_desc,
+    // });
+    // println!("Payload: {}", update_payload);
+    // let update_response = client
+    //     .put(&update_url)
+    //     .basic_auth(&vr_username, Some(&vr_password))
+    //     .json(&update_payload)
+    //     .send()
+    //     .await?;
+    // println!("Update response status: {}", update_response.status());
+
+    // println!("VRChat status updated successfully.");
     Ok(())
 }
